@@ -1,6 +1,5 @@
 var util = require('util');
 var pg = require('pg');
-var semver = require('semver');
 var Base = require('db-migrate-base');
 var Promise = require('bluebird');
 
@@ -157,30 +156,10 @@ var PgDriver = Base.extend({
         name: { type: this.type.STRING, length: 255, notNull: true },
         run_on: { type: this.type.DATE_TIME, notNull: true }
       },
-      ifNotExists: false
+      ifNotExists: true
     };
 
-    return this.all('show server_version')
-      .then(
-        function (result) {
-          if (
-            result &&
-            result &&
-            result.length > 0 &&
-            result[0].server_version
-          ) {
-            var version = result[0].server_version;
-            if (version.split('.').length !== 3) {
-              version += '.0';
-            }
-            options.ifNotExists = semver.gte(version, '9.1.0');
-          }
-
-          // Get the current search path so we can change the current schema
-          // if necessary
-          return this.all('SHOW search_path');
-        }.bind(this)
-      )
+    this.all('SHOW search_path')
       .then(
         function (result) {
           var searchPath;
@@ -240,25 +219,10 @@ var PgDriver = Base.extend({
         name: { type: this.type.STRING, length: 255, notNull: true },
         run_on: { type: this.type.DATE_TIME, notNull: true }
       },
-      ifNotExists: false
+      ifNotExists: true
     };
 
-    return this.all('select version() as version')
-      .then(
-        function (result) {
-          if (result && result && result.length > 0 && result[0].version) {
-            var version = result[0].version;
-            var match = version.match(/\d+\.\d+\.\d+/);
-            if (match && match[0] && semver.gte(match[0], '9.1.0')) {
-              options.ifNotExists = true;
-            }
-          }
-
-          // Get the current search path so we can change the current schema
-          // if necessary
-          return this.all('SHOW search_path');
-        }.bind(this)
-      )
+    return this.all('SHOW search_path')
       .then(
         function (result) {
           var searchPath;
